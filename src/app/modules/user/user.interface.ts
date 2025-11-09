@@ -1,11 +1,33 @@
+import { Types } from 'mongoose';
+
 export interface IUser {
-  name: string;
   email: string;
   password: string;
-  role: 'admin' | 'user';
+  role: "client"|"engineer"|"admin";
+  status: "pending"|"active"|"rejected"|"suspended";
+
+  firstName: string;
+  lastName: string;
+  phone?: string;
   profileImage?: string;
+
+  title?: string;
+  bio?: string;
+  hourlyRate?: number;
+  experience?: number;
+  skills?: string[];
+  certifications?: string[];
+  portfolio?: string[];
+  companyName?: string;
+  industry?: Types.ObjectId;
+  service?: Types.ObjectId;
+
+  address?: string;
+  city?: string;
+  country?: string;
+
+  isEmailVerified: boolean;
   otp?: string;
-  otpExpiry?: Date;
-  verified?: boolean;
-  comparePassword(password: string): Promise<boolean>;
+  otpExpires?: Date;
+  lastLogin?: Date;
 }

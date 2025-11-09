@@ -14,12 +14,9 @@ const sendResponse = <T>(
     statusCode: jsonData.statusCode,
     success: jsonData.success,
     message: jsonData.message,
+    meta: jsonData.meta,
     data: jsonData.data,
   };
-
-  if (jsonData.meta) {
-    responseBody.meta = jsonData.meta;
-  }
 
   res.status(jsonData.statusCode).json(responseBody);
 };
