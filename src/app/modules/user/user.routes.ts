@@ -8,6 +8,18 @@ const router = express.Router();
 
 router.post('/create-user', userController.createUser);
 router.get('/all-user', userController.getAllUser);
+router.get(
+  '/profile',
+  auth(userRole.User, userRole.Engineer, userRole.Admin),
+  userController.getMyProfile,
+);
+
+router.put(
+  '/update-my-profile',
+  auth(userRole.User, userRole.Engineer, userRole.Admin),
+  fileUploader.upload.single('profileImage'),
+  userController.updateMyProfile,
+);
 
 router.get('/get-user/:id', auth(userRole.Admin), userController.getUserById);
 
@@ -22,18 +34,6 @@ router.delete(
   '/delete-user/:id',
   auth(userRole.Admin),
   userController.deleteUserById,
-);
-
-router.get(
-  '/profile',
-  auth(userRole.User, userRole.Engineer, userRole.Admin),
-  userController.getMyProfile,
-);
-router.put(
-  '/update-my-profile',
-  auth(userRole.User, userRole.Engineer, userRole.Admin),
-  fileUploader.upload.single('profileImage'),
-  userController.updateMyProfile,
 );
 
 export const userRoutes = router;

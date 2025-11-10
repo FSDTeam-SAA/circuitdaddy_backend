@@ -36,7 +36,8 @@ const getAllUser = catchAsync(async (req, res) => {
     statusCode: 200,
     success: true,
     message: 'User fetched successfully',
-    data: result,
+    meta: result.meta,
+    data: result.data,
   });
 });
 
@@ -89,7 +90,11 @@ const getMyProfile = catchAsync(async (req, res) => {
 const updateMyProfile = catchAsync(async (req, res) => {
   const file = req.file as Express.Multer.File;
   const fromData = req.body.data ? JSON.parse(req.body.data) : req.body;
-  const result = await userService.updateMyProfile(req.user, fromData, file);
+  const result = await userService.updateMyProfile(
+    req.user?.id,
+    fromData,
+    file,
+  );
   sendResponse(res, {
     statusCode: 200,
     success: true,
