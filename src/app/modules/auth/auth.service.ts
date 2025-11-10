@@ -12,6 +12,8 @@ import bcrypt from 'bcryptjs';
 import createOtpTemplate from '../../utils/createOtpTemplate';
 
 import userRole from '../user/user.constan';
+import Service from '../service/service.model';
+import Industry from '../industri/industri.model';
 
 const registerUser = async (payload: Partial<IUser>) => {
   const exist = await User.findOne({ email: payload.email });
@@ -41,6 +43,27 @@ const registerUser = async (payload: Partial<IUser>) => {
   }
 
   const result = await User.create(payload);
+
+  if (payload.service) {
+    const service = await Service.findById(payload.service);
+    if (!service) {
+      await User.findByIdAndDelete(result._id);
+
+      throw new AppError(400, 'Service not found');
+    }
+    service.users.push(result._id);
+    await service.save();
+  }
+  if (payload.industry) {
+    const industery = await Industry.findById(payload.industry);
+    if (!industery) {
+      await User.findByIdAndDelete(result._id);
+
+      throw new AppError(400, 'Industry not found');
+    }
+    industery.users.push(result._id);
+    await industery.save();
+  }
 
   return result;
 };

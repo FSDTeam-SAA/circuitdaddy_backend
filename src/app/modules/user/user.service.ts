@@ -1,19 +1,18 @@
 import AppError from '../../error/appError';
 import { fileUploader } from '../../helper/fileUploder';
 import pagination, { IOption } from '../../helper/pagenation';
-import sendMailer from '../../helper/sendMailer';
-import createOtpTemplate from '../../utils/createOtpTemplate';
-
 import { IUser } from './user.interface';
 import User from './user.model';
 
 const createUser = async (payload: IUser) => {
+  const isExist = await User.findOne({ email: payload.email });
+  if (isExist) {
+    throw new AppError(400, 'User already exists');
+  }
   const result = await User.create(payload);
-  await sendMailer(
-    payload.email,
-    payload.name,
-    createOtpTemplate(payload.name, payload.email, 'created successfully'),
-  );
+  if (!result) {
+    throw new AppError(400, 'Failed to create user');
+  }
   return result;
 };
 
@@ -22,7 +21,21 @@ const getAllUser = async (params: any, options: IOption) => {
   const { searchTerm, ...filterData } = params;
 
   const andCondition: any[] = [];
-  const userSearchableFields = ['name', 'email', 'role'];
+  const userSearchableFields = [
+    'firstName',
+    'lastName',
+    'phone',
+    'professionTitle',
+    'bio',
+    'skills',
+    'email',
+    'role',
+    'status',
+    'location',
+    'expertise',
+    'companyName',
+    'location',
+  ];
 
   if (searchTerm) {
     andCondition.push({
@@ -85,10 +98,39 @@ const deleteUserById = async (id: string) => {
   return result;
 };
 
+const getMyProfile = async (id: string) => {
+  const result = await User.findById(id);
+  if (!result) {
+    throw new AppError(404, 'User not found');
+  }
+  return result;
+};
+
+const updateMyProfile = async (
+  id: string,
+  payload: IUser,
+  file?: Express.Multer.File,
+) => {
+  if (file) {
+    const uploadProfile = await fileUploader.uploadToCloudinary(file);
+    if (uploadProfile?.secure_url) {
+      throw new AppError(400, 'Failed to upload profile image');
+    }
+    payload.profileImage = uploadProfile.secure_url;
+  }
+  const result = await User.findByIdAndUpdate(id, payload, { new: true });
+  if (!result) {
+    throw new AppError(404, 'User not found');
+  }
+  return result;
+};
+
 export const userService = {
   createUser,
   getAllUser,
   getUserById,
   updateUserById,
   deleteUserById,
+  getMyProfile,
+  updateMyProfile,
 };

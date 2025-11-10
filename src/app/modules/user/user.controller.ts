@@ -14,7 +14,22 @@ const createUser = catchAsync(async (req, res) => {
 });
 
 const getAllUser = catchAsync(async (req, res) => {
-  const filters = pick(req.query, ['searchTerm', 'role', 'name', 'email']);
+  const filters = pick(req.query, [
+    'searchTerm',
+    'firstName',
+    'lastName',
+    'phone',
+    'professionTitle',
+    'bio',
+    'skills',
+    'email',
+    'role',
+    'status',
+    'location',
+    'expertise',
+    'companyName',
+    'location',
+  ]);
   const options = pick(req.query, ['page', 'limit', 'sortBy', 'sortOrder']);
   const result = await userService.getAllUser(filters, options);
   sendResponse(res, {
@@ -61,10 +76,34 @@ const deleteUserById = catchAsync(async (req, res) => {
   });
 });
 
+const getMyProfile = catchAsync(async (req, res) => {
+  const result = await userService.getMyProfile(req.user?.id);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'User fetched successfully',
+    data: result,
+  });
+});
+
+const updateMyProfile = catchAsync(async (req, res) => {
+  const file = req.file as Express.Multer.File;
+  const fromData = req.body.data ? JSON.parse(req.body.data) : req.body;
+  const result = await userService.updateMyProfile(req.user, fromData, file);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'User updated successfully',
+    data: result,
+  });
+});
+
 export const userController = {
   createUser,
   getAllUser,
   getUserById,
   updateUserById,
   deleteUserById,
+  getMyProfile,
+  updateMyProfile,
 };
