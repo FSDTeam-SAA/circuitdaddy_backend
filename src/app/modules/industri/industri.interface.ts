@@ -5,5 +5,5 @@ export interface IIndustry {
   status?: 'active' | 'inactive';
   discription?: string;
   createBy: Types.ObjectId;
-  users?: Types.ObjectId[];
+  users: Types.ObjectId[];
 }

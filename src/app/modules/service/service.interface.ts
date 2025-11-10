@@ -6,5 +6,5 @@ export interface IService {
   status: 'active' | 'inactive';
   description?: string;
   createdBy: Types.ObjectId;
-  users?: Types.ObjectId[];
+  users: Types.ObjectId[];
 }
