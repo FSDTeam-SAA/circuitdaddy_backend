@@ -37,6 +37,18 @@ const getEngineerAllReviews = catchAsync(
   },
 );
 
+const getsingleReview = catchAsync(async (req: Request, res: Response) => {
+  const { reviewId } = req.params;
+  const review = await reviewService.getsingleReview(reviewId);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Review fetched successfully',
+    data: review,
+  });
+});
+
 const updateReview = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id;
   const { reviewId } = req.params;
@@ -75,4 +87,5 @@ export const reviewController = {
   getEngineerAllReviews,
   updateReview,
   deleteReview,
+  getsingleReview,
 };

@@ -3,7 +3,7 @@ import Project from '../project/project.model';
 import User from '../user/user.model';
 import AppError from '../../error/appError';
 
-// ===================== CREATE REVIEW =====================
+
 const addReview = async (
   clientId: string,
   projectId: string,
@@ -29,18 +29,17 @@ const addReview = async (
     throw new AppError(400, 'This engineer did not work on this project');
   }
 
-  // Check if already reviewed
   const existing = await Review.findOne({
     project: projectId,
     engineer: engineerId,
   });
-  if (existing)
+  if (existing) {
     throw new AppError(
       400,
       'You already reviewed this engineer for this project',
     );
+  }
 
-  // Create new review
   const newReview = await Review.create({
     project: projectId,
     client: clientId,
@@ -49,21 +48,26 @@ const addReview = async (
     review,
   });
 
-  // Update engineer stats
   const engineer = await User.findById(engineerId);
   if (engineer) {
     engineer.totalRating = (engineer.totalRating || 0) + rating;
     engineer.ratingCount = (engineer.ratingCount || 0) + 1;
     engineer.avgRating = engineer.totalRating / engineer.ratingCount;
-    engineer.completedProjectsCount =
-      (engineer.completedProjectsCount || 0) + 1;
     await engineer.save();
   }
 
   return newReview;
 };
 
-// ===================== GET ENGINEER REVIEWS =====================
+const getsingleReview = async (reviewId: string) => {
+  const review = await Review.findById(reviewId)
+    .populate('client', 'firstName lastName profileImage')
+    .populate('project', 'title');
+  if (!review) throw new AppError(404, 'Review not found');
+  return review;
+};
+
+
 const getEngineerReviews = async (engineerId: string) => {
   const reviews = await Review.find({ engineer: engineerId })
     .populate('client', 'firstName lastName profileImage')
@@ -71,46 +75,49 @@ const getEngineerReviews = async (engineerId: string) => {
   return reviews;
 };
 
-// ===================== UPDATE REVIEW (FIXED) =====================
+
 const updateReview = async (
   userId: string,
   reviewId: string,
-  newRating: number,
-  newReviewText: string,
+  newRating?: number,
+  newReviewText?: string,
 ) => {
   const user = await User.findById(userId);
   if (!user) throw new AppError(404, 'User not found');
 
-  const reviewToUpdate = await Review.findById(reviewId);
-  if (!reviewToUpdate) throw new AppError(404, 'Review not found');
+  const review = await Review.findById(reviewId);
+  if (!review) throw new AppError(404, 'Review not found');
 
-  if (reviewToUpdate.client.toString() !== userId) {
+  if (review.client.toString() !== userId)
     throw new AppError(403, 'Only the review owner can update');
+
+  const engineer = await User.findById(review.engineer);
+  const oldRating = review.rating;
+
+  if (typeof newRating === 'number') {
+    review.rating = newRating;
+
+    if (engineer) {
+      engineer.totalRating =
+        (engineer.totalRating || 0) - oldRating + newRating;
+      engineer.avgRating =
+        engineer.ratingCount && engineer.ratingCount > 0
+          ? engineer.totalRating / engineer.ratingCount
+          : 0;
+      await engineer.save();
+    }
   }
 
-  const oldRating = reviewToUpdate.rating;
-  const engineerId = reviewToUpdate.engineer;
-
-  // Update the review fields
-  reviewToUpdate.rating = newRating;
-  reviewToUpdate.review = newReviewText;
-  await reviewToUpdate.save();
-
-  // Update engineer stats properly
-  const engineer = await User.findById(engineerId);
-  if (engineer) {
-    engineer.totalRating = (engineer.totalRating || 0) - oldRating + newRating;
-    engineer.avgRating =
-      (engineer.ratingCount || 0) > 0
-        ? engineer.totalRating / (engineer.ratingCount || 0)
-        : 0;
-    await engineer.save();
+  if (typeof newReviewText === 'string' && newReviewText.trim() !== '') {
+    review.review = newReviewText;
   }
 
-  return reviewToUpdate;
+  await review.save();
+
+  return review;
 };
 
-// ===================== DELETE REVIEW (NEW) =====================
+
 const deleteReview = async (userId: string, reviewId: string) => {
   const user = await User.findById(userId);
   if (!user) throw new AppError(404, 'User not found');
@@ -118,20 +125,13 @@ const deleteReview = async (userId: string, reviewId: string) => {
   const review = await Review.findById(reviewId);
   if (!review) throw new AppError(404, 'Review not found');
 
-  if (review.client.toString() !== userId) {
+  if (review.client.toString() !== userId)
     throw new AppError(403, 'Only the review owner can delete');
-  }
 
-  const engineerId = review.engineer;
-  const rating = review.rating;
-
-  await review.deleteOne();
-
-  // Update engineer stats after deletion
-  const engineer = await User.findById(engineerId);
-  if (engineer && (engineer.ratingCount || 0) > 0) {
-    engineer.totalRating = (engineer.totalRating || 0) - rating;
-    engineer.ratingCount = (engineer.ratingCount || 0) - 1;
+  const engineer = await User.findById(review.engineer);
+  if (engineer) {
+    engineer.totalRating = (engineer.totalRating || 0) - review.rating;
+    engineer.ratingCount = Math.max((engineer.ratingCount || 1) - 1, 0);
     engineer.avgRating =
       engineer.ratingCount > 0
         ? engineer.totalRating / engineer.ratingCount
@@ -139,12 +139,14 @@ const deleteReview = async (userId: string, reviewId: string) => {
     await engineer.save();
   }
 
+  await review.deleteOne();
   return { message: 'Review deleted successfully' };
 };
 
 export const reviewService = {
   addReview,
   getEngineerReviews,
+  getsingleReview,
   updateReview,
   deleteReview,
 };
