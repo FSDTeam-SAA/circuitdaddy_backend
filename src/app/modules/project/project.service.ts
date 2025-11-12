@@ -5,6 +5,7 @@ import User from '../user/user.model';
 import Project from './project.model';
 import { Types } from 'mongoose';
 import pagination, { IOption } from '../../helper/pagenation';
+import sendMailer from '../../helper/sendMailer';
 
 // Create Project
 const createProject = async (
@@ -199,6 +200,11 @@ const updateProgress = async (
   // If progress reaches 100%, mark completed
   if (project.progress === 100) {
     project.status = 'completed';
+    project.lastUpdated = new Date();
+    const user = await User.findById(project.client);
+    if (user?.email) {
+      sendMailer(user.email, 'Project Completed', project.title);
+    }
   }
 
   await project.save();
