@@ -101,10 +101,9 @@ const getMyAllBookings = async (
   options: IOption,
 ) => {
   const { page, limit, skip, sortBy, sortOrder } = pagination(options);
-  const { searchTerm,...filterData } = params;
+  const { searchTerm, ...filterData } = params;
 
   const andConditions: any[] = [];
-
 
   const searchableFields = ['link'];
 
@@ -116,7 +115,6 @@ const getMyAllBookings = async (
     });
   }
 
-
   if (Object.keys(filterData).length > 0) {
     andConditions.push({
       $and: Object.entries(filterData).map(([field, value]) => ({
@@ -126,19 +124,24 @@ const getMyAllBookings = async (
   }
 
   const relatedProjects = await Project.find({
-    $or: [{ client: userId }, { engineers: userId }, { approvedEngineers: userId }],
+    $or: [
+      { client: userId },
+      { engineers: userId },
+      { approvedEngineers: userId },
+    ],
   }).select('_id');
 
   const projectIds = relatedProjects.map((p) => p._id);
 
   andConditions.push({
     $or: [
-      { userId: new mongoose.Types.ObjectId(userId) }, 
-      { projectId: { $in: projectIds } },          
+      { userId: new mongoose.Types.ObjectId(userId) },
+      { projectId: { $in: projectIds } },
     ],
   });
 
-  const whereCondition = andConditions.length > 0 ? { $and: andConditions } : {};
+  const whereCondition =
+    andConditions.length > 0 ? { $and: andConditions } : {};
 
   const bookings = await Booking.find(whereCondition)
     .sort({ [sortBy]: sortOrder } as any)
@@ -232,6 +235,43 @@ const deleteBooking = async (userId: string, bookingId: string) => {
   return { message: 'Booking deleted successfully' };
 };
 
+const getUpcommingBooking = async (userId: string) => {
+  const now = new Date();
+  const nextWeek = new Date();
+  nextWeek.setDate(now.getDate() + 7);
+
+  // 🔹 যেসব প্রজেক্টে user আছে
+  const relatedProjects = await Project.find({
+    $or: [
+      { client: userId },
+      { engineers: userId },
+      { approvedEngineers: userId },
+    ],
+  }).select('_id');
+
+  const projectIds = relatedProjects.map((p) => p._id);
+
+  const bookings = await Booking.find({
+    $or: [
+      { userId: new mongoose.Types.ObjectId(userId) },
+      { projectId: { $in: projectIds } },          
+    ],
+    date: { $gte: now, $lte: nextWeek },
+  })
+    .sort({ date: 1 })
+    .populate({
+      path: 'projectId',
+      populate: [
+        { path: 'client', select: 'firstName lastName email' },
+        { path: 'engineers', select: 'firstName lastName email' },
+        { path: 'approvedEngineers', select: 'firstName lastName email' },
+      ],
+    })
+    .populate('userId', 'firstName lastName email');
+
+  return bookings;
+};
+
 export const bookingService = {
   createBooking,
   getAllBookings,
@@ -239,4 +279,5 @@ export const bookingService = {
   updateBooking,
   deleteBooking,
   getMyAllBookings,
+  getUpcommingBooking
 };

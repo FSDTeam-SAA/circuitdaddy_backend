@@ -20,6 +20,12 @@ router.get(
 );
 
 router.get(
+  '/upcoming',
+  auth(userRole.User, userRole.Engineer),
+  bookingController.getUpcommingBooking,
+);
+
+router.get(
   '/:id',
   auth(userRole.User, userRole.Engineer),
   bookingController.getSingleBooking,
