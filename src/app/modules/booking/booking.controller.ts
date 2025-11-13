@@ -85,6 +85,17 @@ const getMyAllBookings = catchAsync(async (req, res) => {
   });
 });
 
+const getUpcommingBooking = catchAsync(async (req, res) => {
+  const userId = req.user.id;
+  const result = await bookingService.getUpcommingBooking(userId);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Upcoming bookings (next 7 days) retrieved successfully',
+    data: result,
+  });
+});
+
 export const bookingController = {
   createBooking,
   getAllBookings,
@@ -92,4 +103,5 @@ export const bookingController = {
   updateBooking,
   deleteBooking,
   getMyAllBookings,
+  getUpcommingBooking,
 };
