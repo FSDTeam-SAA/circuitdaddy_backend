@@ -22,7 +22,7 @@ const projectSchema = new mongoose.Schema<IProject>(
 
     // Progress tracking
     progress: { type: Number, default: 0 }, // 0 - 100
-    totalTimeline: { type: Number, default: 7 },
+    totalTimeline: { type: Number, default: 0 },
     startDate: { type: Date },
     deliveryDate: { type: Date, default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
     lastUpdated: { type: Date, default: Date.now },
