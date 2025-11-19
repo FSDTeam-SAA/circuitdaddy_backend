@@ -5,16 +5,16 @@ import { IAssignHours } from './assignHours.interface';
 import AssignHour from './assignHours.model';
 
 const createAssignHour = async (managerId: string, payload: IAssignHours) => {
-  // ✅ Manager check
+  // Manager check
   const manager = await User.findById(managerId);
   if (!manager) throw new AppError(404, 'Manager not found');
   if (!manager.ismanager) throw new AppError(403, 'You are not a manager');
 
-  // ✅ Project check
+  // Project check
   const project = await Project.findById(payload.projectId);
   if (!project) throw new AppError(404, 'Project not found');
 
-  // ✅ Engineer check (allow manager himself)
+  // Engineer check (allow manager himself)
   if (
     payload.engineerId.toString() !== managerId && // manager নিজেকে ছাড়া
     !project.approvedEngineers?.some(
@@ -24,13 +24,13 @@ const createAssignHour = async (managerId: string, payload: IAssignHours) => {
     throw new AppError(400, 'This engineer is not approved for this project');
   }
 
-  // ✅ Engineer info
+  // Engineer info
   const engineer = await User.findById(payload.engineerId);
   if (!engineer) throw new AppError(404, 'Engineer not found');
   if (!engineer.rate || engineer.rate <= 0)
     throw new AppError(400, 'Engineer rate not set');
 
-  // ✅ Budget calculation
+  // Budget calculation
   const adminPercentage = 10;
   const adminAmount = (project.totalPaid! * adminPercentage) / 100;
   const usableBudget = project.totalPaid! - adminAmount;
@@ -47,13 +47,13 @@ const createAssignHour = async (managerId: string, payload: IAssignHours) => {
     );
   }
 
-  // ✅ Save AssignHour
+  // Save AssignHour
   const result = await AssignHour.create({
     ...payload,
     managerId: manager._id,
   });
 
-  // ✅ Update project usedAmount
+  // Update project usedAmount
   project.usedAmount = usedAmount + assignCost;
   await project.save();
 
