@@ -6,6 +6,7 @@ import Project from './project.model';
 import { Types } from 'mongoose';
 import pagination, { IOption } from '../../helper/pagenation';
 import sendMailer from '../../helper/sendMailer';
+import Booking from '../booking/booking.model';
 
 // Create Project
 const createProject = async (
@@ -153,8 +154,14 @@ const getMyAllProjects = async (
 
   const projects = await Project.find(queryCondition)
     .populate('client', 'firstName lastName email profileImage')
-    .populate('engineers', 'firstName lastName email profileImage')
-    .populate('approvedEngineers', 'firstName lastName email profileImage')
+    .populate(
+      'engineers',
+      'firstName lastName email profileImage professionTitle',
+    )
+    .populate(
+      'approvedEngineers',
+      'firstName lastName email profileImage professionTitle ismanager',
+    )
     .skip(skip)
     .limit(limit)
     .sort({ [sortBy]: sortOrder } as any);
@@ -309,11 +316,16 @@ const singleProject = async (projectId: string) => {
   const project = await Project.findById(projectId)
     .populate('client', 'firstName lastName email profileImage')
     .populate('engineers', 'firstName lastName email profileImage')
-    .populate('approvedEngineers', 'firstName lastName email profileImage');
+    .populate(
+      'approvedEngineers',
+      'firstName lastName email profileImage professionTitle ismanager',
+    );
+
+  const booking = await Booking.findOne({ projectId: projectId });
 
   if (!project) throw new AppError(404, 'Project not found');
 
-  return project;
+  return {project,booking};
 };
 
 const assasintManager = async (
