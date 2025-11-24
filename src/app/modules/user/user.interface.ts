@@ -36,16 +36,13 @@ export interface IUser {
   stripeAccountId?: string;
 
   // financial + badges
-  walletBalance?: number; // for clients
-  balance?: number; // engineer pending payout
+  walletBalance?: number;
+  balance?: number;
   totalEarned?: number;
   completedProjectsCount?: number;
-  totalRating?: number;
-  ratingCount?: number;
-  avgRating?: number;
-  badge?: string;
   level?: number;
+  avgRating?: number;
   ismanager?: boolean;
-  // badge
-  badges?: Types.ObjectId ;
+  badge?: Types.ObjectId;
+  lavelUpdateRequest?: boolean;
 }
