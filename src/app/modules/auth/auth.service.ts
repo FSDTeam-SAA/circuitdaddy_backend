@@ -22,6 +22,7 @@ const registerUser = async (payload: Partial<IUser>) => {
   const idx = Math.floor(Math.random() * 100);
   payload.profileImage = `https://avatar.iran.liara.run/public/${idx}.png`;
 
+  // Engineer required fields
   if (payload.role === userRole.Engineer) {
     const requiredFields = [
       'professionTitle',
@@ -34,38 +35,49 @@ const registerUser = async (payload: Partial<IUser>) => {
 
     for (const field of requiredFields) {
       if (!payload[field as keyof IUser]) {
-        throw new AppError(
-          400,
-          `Missing required field for engineer: ${field}`,
-        );
+        throw new AppError(400, `Missing required field for engineer: ${field}`);
       }
     }
   }
 
+  // Generate OTP and expiry
+  const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit
+  const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+  payload.otp = otp;
+  payload.otpExpiry = expiry;
+
+
+  // Create user
   const result = await User.create(payload);
 
+  // If service exists update reference
   if (payload.service) {
     const service = await Service.findById(payload.service);
     if (!service) {
       await User.findByIdAndDelete(result._id);
-
       throw new AppError(400, 'Service not found');
     }
     service.users.push(result._id);
     await service.save();
   }
+
+  // If industry exists update reference
   if (payload.industry) {
     const industery = await Industry.findById(payload.industry);
     if (!industery) {
       await User.findByIdAndDelete(result._id);
-
       throw new AppError(400, 'Industry not found');
     }
     industery.users.push(result._id);
     await industery.save();
   }
 
-  return result;
+  // Send OTP email
+  const html = createOtpTemplate(otp);  
+  await sendMailer(payload.email as string, 'Verify Your Email', html);
+
+  return { message: 'Registration successful. Please verify your email.', userId: result._id };
 };
 
 const loginUser = async (payload: Partial<IUser>) => {
@@ -96,6 +108,17 @@ const loginUser = async (payload: Partial<IUser>) => {
 
   const { password, ...userWithoutPassword } = user.toObject();
   return { accessToken, refreshToken, user: userWithoutPassword };
+};
+
+
+const verifyUserEmailService = async (email: string, otp: string) => {
+  const user = await User.findOne({ email });
+  if (!user) throw new AppError(401, 'User not found');
+  if (user.otp !== otp) throw new AppError(401, 'OTP not matched');
+  if (user.otpExpiry! < new Date()) throw new AppError(401, 'OTP expired');
+  user.status = 'active';
+  await user.save();
+  return user;
 };
 
 const refreshToken = async (token: string) => {
@@ -203,6 +226,7 @@ const changePassword = async (
 export const authService = {
   registerUser,
   loginUser,
+  verifyUserEmailService,
   refreshToken,
   forgotPassword,
   verifyEmailOTP,

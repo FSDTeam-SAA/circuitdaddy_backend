@@ -35,6 +35,19 @@ const loginUser = catchAsync(async (req, res) => {
   });
 });
 
+const verifyUserEmail = catchAsync(async (req, res) => {
+  const { email, otp } = req.body;
+  const result = await authService.verifyUserEmailService(email, otp);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Email verified successfully',
+    data: result,
+  });
+}); 
+
+
 const refreshToken = catchAsync(async (req, res) => {
   const { refreshToken } = req.cookies;
   const result = await authService.refreshToken(refreshToken);
@@ -122,6 +135,7 @@ const changePassword = catchAsync(async (req, res) => {
 export const authController = {
   registerUser,
   loginUser,
+  verifyUserEmail,
   refreshToken,
   forgotPassword,
   verifyEmailOTP,
