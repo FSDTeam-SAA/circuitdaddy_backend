@@ -117,37 +117,68 @@ const deleteBadge = async (id: string) => {
   return result;
 };
 
+// const requestBadgeLavel = async (userId: string, badgeId: string) => {
+//   const user = await User.findById(userId);
+//   if (!user) throw new AppError(404, 'User not found');
+
+//   if (user.role !== 'engineer') {
+//     throw new AppError(400, 'Only engineers can request a badge');
+//   }
+
+//   if (!user.completedProjectsCount || user.completedProjectsCount < 1) {
+//     throw new AppError(400, 'You must complete at least 1 project');
+//   }
+
+//   if (user.badgeUpdateRequest) {
+//     throw new AppError(400, 'You already have a pending request');
+//   }
+
+//   const badge = await Badge.findById(badgeId);
+//   if (!badge) throw new AppError(404, 'Badge not found');
+
+//   // ❗ ONLY request data update
+//   user.badgeUpdateRequest = true;
+//   user.badgeRequest = badge._id;
+
+//   await user.save();
+//   // Ensure badge field NEVER changes here
+//   user.badge = user.badge || null; // keep old value (if null stays null)
+
+//   await user.save();
+
+//   return user;
+// };
+
 const requestBadgeLavel = async (userId: string, badgeId: string) => {
   const user = await User.findById(userId);
-  if (!user) throw new AppError(404, 'User not found');
+  if (!user) throw new AppError(404, "User not found");
 
-  if (user.role !== 'engineer') {
-    throw new AppError(400, 'Only engineers can request a badge');
+  if (user.role !== "engineer") {
+    throw new AppError(400, "Only engineers can request badges");
   }
 
-  if (!user.completedProjectsCount || user.completedProjectsCount < 1) {
-    throw new AppError(400, 'You must complete at least 1 project');
+  if ((user.completedProjectsCount ?? 0) < 1) {
+    throw new AppError(400, "You must complete at least 1 project");
   }
 
   if (user.badgeUpdateRequest) {
-    throw new AppError(400, 'You already have a pending request');
+    throw new AppError(400, "You already have a pending request");
   }
 
   const badge = await Badge.findById(badgeId);
-  if (!badge) throw new AppError(404, 'Badge not found');
+  if (!badge) throw new AppError(404, "Badge not found");
 
-  // ❗ ONLY request data update
+  if (user.badge && user.badge.includes(badge._id)) {
+    throw new AppError(400, "You already have this badge");
+  }
+
   user.badgeUpdateRequest = true;
   user.badgeRequest = badge._id;
 
   await user.save();
-  // Ensure badge field NEVER changes here
-  user.badge = user.badge || null; // keep old value (if null stays null)
-
-  await user.save();
-
   return user;
 };
+
 
 const alllavelRequest = async (params: any, options: IOption) => {
   const { page, limit, skip, sortBy, sortOrder } = pagination(options);
@@ -212,25 +243,48 @@ const alllavelRequest = async (params: any, options: IOption) => {
   };
 };
 
+// const approvedBadge = async (userId: string) => {
+//   const user = await User.findById(userId);
+//   if (!user) throw new AppError(404, 'User not found');
+
+//   if (!user.badgeRequest) {
+//     throw new AppError(400, 'No pending badge request');
+//   }
+
+//   // Approve badge
+//   user.badge?.push(user.badgeRequest);
+//   user.badgeRequest = null;
+//   user.badgeUpdateRequest = false;
+
+//   await user.save();
+
+//   // const badge = await Badge.findById(user.badge);
+
+//   return user;
+// };
+
 const approvedBadge = async (userId: string) => {
   const user = await User.findById(userId);
-  if (!user) throw new AppError(404, 'User not found');
+  if (!user) throw new AppError(404, "User not found");
 
   if (!user.badgeRequest) {
-    throw new AppError(400, 'No pending badge request');
+    throw new AppError(400, "No pending badge request");
   }
 
-  // Approve badge
-  user.badge = user.badgeRequest;
+  if (!Array.isArray(user.badge)) {
+    user.badge = [];
+  }
+
+  user.badge.push(user.badgeRequest);
   user.badgeRequest = null;
   user.badgeUpdateRequest = false;
 
   await user.save();
 
-  // const badge = await Badge.findById(user.badge);
-
-  return user;
+  return await User.findById(userId).populate("badge");
 };
+
+
 
 const getSingleRequestLavel = async (userId: string) => {
   const user = await User.findById(userId).select('-password');
