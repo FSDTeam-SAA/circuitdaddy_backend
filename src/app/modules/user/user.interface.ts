@@ -45,7 +45,7 @@ export interface IUser {
   totalRating?: number;
   ratingCount?: number;
   ismanager?: boolean;
-  badge?: Types.ObjectId | null;
+  badge?: Types.ObjectId[] | null;
   badgeRequest?: Types.ObjectId | null;
   lavelUpdateRequest?: boolean;
   badgeUpdateRequest?: boolean;
