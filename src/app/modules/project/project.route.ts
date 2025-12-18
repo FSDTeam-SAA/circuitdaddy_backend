@@ -35,11 +35,11 @@ router.delete(
 );
 
 // user assigns project manager to engineer
-router.put(
-  '/:projectId/assign',
-  auth(userRole.User),
-  projectController.assasintManager,
-);
+// router.put(
+//   '/:projectId/assign',
+//   auth(userRole.User),
+//   projectController.assasintManager,
+// );
 
 // Engineer approves project
 router.put(
