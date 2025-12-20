@@ -4,7 +4,7 @@ import cookieParser from 'cookie-parser';
 import notFoundError from './app/error/notFoundError';
 import globalErrorHandler from './app/middlewares/globalErrorHandler';
 import router from './app/routes/routes';
-import { paymentController } from './app/modules/payment/payment.conroller';
+import { paymentController } from './app/modules/payment/payment.controller';
 
 const app = express();
 
