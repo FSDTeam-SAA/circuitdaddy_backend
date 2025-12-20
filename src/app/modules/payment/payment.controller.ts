@@ -262,15 +262,25 @@ const createCheckoutSession = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: 'Checkout created',
+    message: 'Checkout session created successfully',
     data: result,
   });
 });
 
 const handleWebhook = async (req: Request, res: Response) => {
-  const sig = req.headers['stripe-signature'] as string;
-  const result = await paymentService.handleWebhook(req.body, sig);
-  res.status(200).json(result);
+  try {
+    const sig = req.headers['stripe-signature'] as string;
+    
+    if (!sig) {
+      return res.status(400).json({ error: 'No stripe signature' });
+    }
+
+    const result = await paymentService.handleWebhook(req.body, sig);
+    res.status(200).json(result);
+  } catch (error: any) {
+    console.error('Webhook controller error:', error);
+    res.status(400).json({ error: `Webhook Error: ${error.message}` });
+  }
 };
 
 const getPaymentHistory = catchAsync(async (req, res) => {
@@ -287,9 +297,36 @@ const getPaymentHistory = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: 'Payment history',
+    message: 'Payment history retrieved successfully',
     meta: result.meta,
     data: result.data,
+  });
+});
+
+const getPaymentById = catchAsync(async (req, res) => {
+  const { paymentId } = req.params;
+  const userId = req.user.id;
+
+  const result = await paymentService.getPaymentById(paymentId, userId);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Payment details retrieved successfully',
+    data: result,
+  });
+});
+
+const manualDistribution = catchAsync(async (req, res) => {
+  const { paymentId } = req.params;
+
+  const result = await paymentService.manualDistribution(paymentId);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Funds distributed successfully',
+    data: result,
   });
 });
 
@@ -297,4 +334,6 @@ export const paymentController = {
   createCheckoutSession,
   handleWebhook,
   getPaymentHistory,
+  getPaymentById,
+  manualDistribution,
 };
